@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Agent Consent Authorization — Amanda Montgomery Insurance</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --teal: #2C4A47; --teal-lt: #3a5e5a; --gold: #B8832A; --gold-lt: #d4a04e;
+    --cream: #FAFAF8; --white: #ffffff; --text: #1e2d2c; --muted: #6b7e7c; --border: #dde4e3;
+    --navy: #1a3a5c;
+  }
+  body { font-family: 'Inter', sans-serif; background: var(--cream); color: var(--text); font-size: 15px; line-height: 1.6; }
+
+  /* HEADER */
+  .header { background: var(--teal); padding: 28px 40px 24px; text-align: center; }
+  .header.medicare { background: var(--navy); }
+  .header-name { font-family: 'Playfair Display', serif; font-style: italic; font-weight: 400; font-size: 2.4rem; color: var(--white); line-height: 1.1; }
+  .header-title { font-size: 0.72rem; font-weight: 500; letter-spacing: 2.5px; text-transform: uppercase; color: var(--gold-lt); margin-top: 6px; }
+  .header-divider { width: 40px; height: 1.5px; background: var(--gold); margin: 14px auto 0; }
+  .header-form-type { font-size: 0.78rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.6); margin-top: 8px; }
+
+  /* TYPE SELECTOR (shown before form) */
+  .type-selector { max-width: 680px; margin: 32px auto; padding: 0 40px; }
+  .type-selector h2 { font-family: 'Playfair Display', serif; font-size: 1.3rem; color: var(--teal); margin-bottom: 8px; }
+  .type-selector p { font-size: 0.88rem; color: var(--muted); margin-bottom: 20px; line-height: 1.6; }
+  .type-btns { display: flex; gap: 12px; }
+  .type-btn { flex: 1; padding: 18px; border: 2px solid var(--border); border-radius: 10px; background: var(--white); cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s; text-align: center; }
+  .type-btn:hover { border-color: var(--teal); }
+  .type-btn .tb-icon { font-size: 2rem; margin-bottom: 8px; }
+  .type-btn .tb-title { font-size: 0.95rem; font-weight: 700; color: var(--teal); margin-bottom: 4px; }
+  .type-btn .tb-sub { font-size: 0.78rem; color: var(--muted); line-height: 1.4; }
+
+  /* CONTAINER */
+  .container { max-width: 680px; margin: 0 auto; padding: 0 40px 60px; display: none; }
+
+  /* NOTICES */
+  .notice { display: flex; align-items: flex-start; gap: 10px; padding: 12px 16px; border-radius: 0 6px 6px 0; margin-top: 16px; font-size: 0.86rem; line-height: 1.6; }
+  .notice-gold { background: #fdf7ee; border-left: 3px solid var(--gold); color: var(--brown, #5a3e1b); }
+  .notice-teal { background: #eef4f3; border-left: 3px solid var(--teal); color: var(--teal); }
+  .notice-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+
+  /* CONSENT CARD */
+  .consent-card { background: var(--white); border: 1px solid var(--border); border-radius: 10px; margin-top: 24px; overflow: hidden; }
+  .consent-card-header { padding: 14px 24px; display: flex; align-items: center; gap: 10px; }
+  .consent-card-header.aca { background: var(--teal); }
+  .consent-card-header.medicare { background: var(--navy); }
+  .consent-card-header h2 { font-family: 'Playfair Display', serif; font-size: 1.05rem; font-weight: 600; color: var(--white); }
+  .consent-card-badge { font-size: 0.66rem; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gold-lt); background: rgba(255,255,255,0.12); padding: 2px 9px; border-radius: 20px; margin-left: auto; }
+  .consent-card-body { padding: 24px; }
+
+  /* CONSENT TEXT BOX */
+  .consent-text { background: #f0f5f4; border-radius: 8px; padding: 20px 22px; font-size: 0.87rem; line-height: 1.85; color: var(--text); margin-bottom: 24px; }
+  .consent-text p { margin-bottom: 10px; }
+  .consent-text ul { margin: 8px 0 10px 20px; }
+  .consent-text li { margin-bottom: 5px; }
+
+  /* FIELDS */
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; }
+  .field-grid .full { grid-column: 1 / -1; }
+  .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 0; }
+  label { font-size: 0.77rem; font-weight: 600; color: var(--muted); }
+  label .req { color: var(--gold); margin-left: 2px; }
+  input[type="text"], input[type="date"] {
+    width: 100%; padding: 10px 13px; border: 1.5px solid var(--border); border-radius: 7px;
+    font-family: 'Inter', sans-serif; font-size: 0.92rem; color: var(--text); background: var(--white);
+    transition: border-color 0.15s, box-shadow 0.15s; appearance: none; -webkit-appearance: none;
+  }
+  input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(184,131,42,0.12); }
+  input::placeholder { color: #b0bcbb; }
+  input[readonly] { background: #f7f7f5; color: var(--muted); cursor: default; }
+
+  /* SIGNATURE */
+  .sig-section { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+  .sig-label-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .sig-label-row h3 { font-size: 0.85rem; font-weight: 700; color: var(--teal); text-transform: uppercase; letter-spacing: 1px; }
+  .sig-preview { border: 1.5px solid var(--border); border-radius: 7px; padding: 14px 16px; min-height: 52px; background: var(--cream); margin-bottom: 8px; display: flex; align-items: center; }
+  .sig-preview-text { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-style: italic; color: var(--teal); min-width: 20px; }
+  .sig-hint { font-size: 0.75rem; color: var(--muted); margin-bottom: 14px; }
+
+  /* CHECKBOX */
+  .checkbox-row { display: flex; align-items: flex-start; gap: 12px; cursor: pointer; user-select: none; margin-top: 18px; }
+  .checkbox-row input[type="checkbox"] { position: absolute; opacity: 0; width: 0; height: 0; }
+  .checkbox-box { width: 20px; height: 20px; min-width: 20px; border: 1.5px solid var(--border); border-radius: 5px; background: var(--white); display: flex; align-items: center; justify-content: center; transition: all 0.15s; margin-top: 2px; }
+  .checkbox-row input[type="checkbox"]:checked + .checkbox-box { background: var(--teal); border-color: var(--teal); }
+  .checkbox-row input[type="checkbox"]:checked + .checkbox-box::after { content: "✓"; color: white; font-size: 0.78rem; font-weight: 700; }
+  .checkbox-label { font-size: 0.88rem; color: var(--text); line-height: 1.55; }
+
+  /* LEGAL */
+  .legal-block { background: #f5f5f0; border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; margin-top: 20px; font-size: 0.77rem; color: var(--muted); line-height: 1.65; }
+  .legal-block strong { color: var(--teal); display: block; margin-bottom: 4px; font-size: 0.78rem; }
+
+  /* ACTIONS */
+  .actions-row { display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap; }
+  .btn-primary { flex: 1; background: var(--teal); color: var(--white); border: none; border-radius: 8px; padding: 15px 24px; font-family: 'Inter', sans-serif; font-size: 0.92rem; font-weight: 600; cursor: pointer; transition: background 0.15s, transform 0.1s; }
+  .btn-primary.navy { background: var(--navy); }
+  .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .btn-secondary { background: var(--white); color: var(--teal); border: 1.5px solid var(--border); border-radius: 8px; padding: 15px 18px; font-family: 'Inter', sans-serif; font-size: 0.92rem; font-weight: 600; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .btn-secondary:hover { border-color: var(--teal); background: #f0f5f4; }
+
+  /* THANK YOU */
+  .thankyou { display: none; text-align: center; padding: 48px 24px; background: var(--white); border: 1px solid var(--border); border-radius: 10px; margin-top: 24px; }
+  .thankyou .check { width: 56px; height: 56px; background: var(--teal); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; font-size: 1.5rem; color: white; }
+  .thankyou.medicare .check { background: var(--navy); }
+  .thankyou h2 { font-family: 'Playfair Display', serif; font-size: 1.45rem; color: var(--teal); margin-bottom: 10px; }
+  .thankyou.medicare h2 { color: var(--navy); }
+  .thankyou p { color: var(--muted); font-size: 0.92rem; line-height: 1.7; }
+
+  /* FOOTER */
+  .footer { text-align: center; padding: 24px 0 0; color: var(--muted); font-size: 0.78rem; line-height: 1.7; margin-top: 8px; }
+  .footer a { color: var(--gold); text-decoration: none; }
+
+  @media (max-width: 600px) {
+    .header { padding: 22px 20px 18px; } .header-name { font-size: 1.9rem; }
+    .type-selector, .container { padding-left: 16px; padding-right: 16px; }
+    .type-btns { flex-direction: column; }
+    .field-grid { grid-template-columns: 1fr; } .field-grid .full { grid-column: 1; }
+    .actions-row { flex-direction: column; }
+    .btn-primary, .btn-secondary { width: 100%; }
+  }
+  @media print { .actions-row, .type-selector { display: none !important; } }
+</style>
+</head>
+<body>
+
+<header class="header" id="page-header">
+  <div class="header-name">Amanda Montgomery</div>
+  <div class="header-title">Licensed Health Insurance Broker · Texas · NPN 21391594</div>
+  <div class="header-divider"></div>
+  <div class="header-form-type" id="header-form-type">Agent Consent Authorization</div>
+</header>
+
+<!-- TYPE SELECTOR -->
+<div class="type-selector" id="type-selector">
+  <h2>Select Your Consent Form</h2>
+  <p>Please select the type of coverage Amanda is helping you with. This ensures the correct authorization language is used for your situation.</p>
+  <div class="type-btns">
+    <div class="type-btn" onclick="selectType('aca')">
+      <div class="tb-icon">🏥</div>
+      <div class="tb-title">ACA / Marketplace</div>
+      <div class="tb-sub">Health insurance through the federal or state marketplace (under 65)</div>
+    </div>
+    <div class="type-btn" onclick="selectType('medicare')">
+      <div class="tb-icon">⭐</div>
+      <div class="tb-title">Medicare</div>
+      <div class="tb-sub">Medicare Advantage, Supplement, or Part D (age 65+ or qualifying disability)</div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN FORM CONTAINER -->
+<div class="container" id="form-container">
+
+  <div class="notice notice-gold" style="margin-top:20px;">
+    <span class="notice-icon">🔒</span>
+    <span><strong>Privacy notice:</strong> Please do not include your Social Security number on this form. Your information is used only to authorize Amanda Montgomery as your insurance agent and will never be sold or shared with unauthorized parties.</span>
+  </div>
+
+  <div class="notice notice-teal" id="platform-notice" style="margin-top:0;">
+    <span class="notice-icon">ℹ️</span>
+    <span id="platform-notice-text"></span>
+  </div>
+
+  <!-- CONSENT CARD -->
+  <div class="consent-card">
+    <div class="consent-card-header" id="consent-card-header">
+      <h2 id="consent-card-title">Agent Consent Authorization</h2>
+      <span class="consent-card-badge" id="consent-card-badge">Required</span>
+    </div>
+    <div class="consent-card-body">
+
+      <p style="font-size:0.9rem; color:var(--muted); line-height:1.75; margin-bottom:20px;" id="consent-intro"></p>
+
+      <!-- CONSENT TEXT -->
+      <div class="consent-text" id="consent-text"></div>
+
+      <!-- CLIENT INFO -->
+      <div class="field-grid">
+        <div class="field full"><label>Your Full Legal Name <span class="req">*</span></label><input type="text" id="c_name" placeholder="First and last name"></div>
+        <div class="field"><label>Date of Birth <span class="req">*</span></label><input type="date" id="c_dob"></div>
+        <div class="field"><label>Phone Number <span class="req">*</span></label><input type="text" id="c_phone" placeholder="e.g. (346) 555-0100"></div>
+        <div class="field"><label>Email Address</label><input type="text" id="c_email" placeholder="e.g. jane@email.com"></div>
+        <div class="field"><label>ZIP Code</label><input type="text" id="c_zip" placeholder="e.g. 77001" maxlength="5"></div>
+        <div class="field"><label>Date</label><input type="text" id="c_date" readonly></div>
+      </div>
+
+      <!-- SIGNATURE -->
+      <div class="sig-section">
+        <div class="sig-label-row"><h3>Electronic Signature</h3></div>
+        <p class="sig-hint">Type your full legal name below to sign electronically. Your typed name serves as your legally binding signature confirming your consent.</p>
+        <div class="field" style="margin-bottom:10px;">
+          <label>Type Your Full Name to Sign <span class="req">*</span></label>
+          <input type="text" id="c_sig" placeholder="Type your full legal name here" oninput="updateSigPreview()">
+        </div>
+        <div class="sig-preview"><span class="sig-preview-text" id="sig-preview-text">—</span></div>
+        <p class="sig-hint" style="margin-top:6px;">Signature preview — your name will appear exactly as typed above in the PDF.</p>
+      </div>
+
+      <!-- AGREE CHECKBOX -->
+      <label class="checkbox-row">
+        <input type="checkbox" id="c_agree">
+        <span class="checkbox-box"></span>
+        <span class="checkbox-label">I have read and understand the authorization above, and I consent to Amanda Montgomery serving as my licensed insurance agent for the purpose described. I understand I may revoke this consent at any time by contacting Amanda directly.</span>
+      </label>
+
+      <!-- LEGAL BLOCK -->
+      <div class="legal-block" id="legal-block">
+        <strong>Disclosure</strong>
+        <span id="legal-text"></span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ACTIONS -->
+  <div class="actions-row" id="action-row">
+    <button class="btn-primary" id="submit-btn" onclick="submitConsent()">✉ Sign &amp; Submit Consent</button>
+    <button class="btn-secondary" onclick="resetForm()">← Change Type</button>
+  </div>
+
+  <!-- THANK YOU -->
+  <div class="thankyou" id="thankyou">
+    <div class="check">✓</div>
+    <h2>Consent Submitted!</h2>
+    <p>Your signed consent has been sent to Amanda and a PDF copy has been saved to your device.<br><br>
+    Amanda will be in touch shortly with your coverage options. Feel free to call or text at <strong>(346) 577-4391</strong> if you have any questions in the meantime.</p>
+  </div>
+
+  <div class="footer">
+    <p>Amanda Montgomery · Licensed Health Insurance Broker · Texas · NPN 21391594</p>
+    <p><a href="tel:3465774391">(346) 577-4391</a> &nbsp;·&nbsp; <a href="mailto:amandamotgo@gmail.com">amandamotgo@gmail.com</a></p>
+    <p style="margin-top:6px; font-size:0.73rem; color:#9eb0ae;">Not affiliated with Medicare, Medicaid, or any government program. This consent form is for agent of record designation only.</p>
+  </div>
+</div>
+
+<script>
+let currentType = null;
+
+const content = {
+  aca: {
+    headerClass: 'teal',
+    cardHeaderClass: 'aca',
+    cardTitle: 'ACA / Marketplace Agent Consent',
+    badge: 'Health Sherpa',
+    platformNotice: 'This consent authorizes Amanda to act as your agent on the Health Insurance Marketplace and is required before she can search or apply on your behalf. Once submitted, your signed consent will also be uploaded to <strong>Health Sherpa</strong> for compliance.',
+    intro: 'Please read the following authorization carefully. By completing and signing this form, you are granting Amanda Montgomery permission to act as your licensed agent on the Federally Facilitated Marketplace or State Based Exchange.',
+    consentText: (name) => `
+      <p>I, <strong>${name||'[Your Name]'}</strong>, give my permission to <strong>Amanda Montgomery</strong> ("Agent") to serve as the health insurance Agent or broker for myself and my entire household, if applicable, for purposes of enrollment in a Qualified Health Plan offered on the Federally Facilitated Marketplace or State Based Exchange (SBE).</p>
+      <p>By consenting to this agreement, I authorize the above-mentioned Agent to view and use the confidential information provided by me in writing, electronically, or by phone only for one or more of the following:</p>
+      <ul>
+        <li>Searching for an existing Marketplace or SBE application</li>
+        <li>Completing an application for eligibility and enrollment in a Marketplace or SBE Qualified Health Plan or other government insurance affordability programs, such as Medicaid and CHIP or advance tax credits to help pay for Marketplace or SBE premiums</li>
+        <li>Providing ongoing account maintenance and enrollment assistance, as necessary</li>
+        <li>Responding to inquiries from the Marketplace or SBE regarding my application</li>
+      </ul>
+      <p>I understand that the Agent will not use or share my personally identifiable information (PII) for any purposes other than those listed above. The Agent will ensure that my PII is kept private and safe when collecting, storing, and using my PII for the stated purposes above.</p>
+      <p>I understand that I do not have to share additional personal information about myself or my health with my Agent beyond what is required on the application for eligibility and enrollment purposes. I understand that my consent remains in effect until I revoke it, and I may revoke or modify my consent at any time by contacting my Agent.</p>
+      <p><strong>Agent Name:</strong> Amanda Montgomery &nbsp;|&nbsp; <strong>NPN:</strong> 21391594 &nbsp;|&nbsp; <strong>Phone:</strong> (346) 577-4391</p>`,
+    legal: 'Amanda Montgomery is a licensed, independent insurance broker. This consent is for agent of record designation on the Federally Facilitated Marketplace or State Based Exchange only. It does not constitute enrollment in any health plan. The client retains the right to revoke this consent at any time by notifying Amanda Montgomery directly at (346) 577-4391.',
+    pdfTitle: 'ACA / MARKETPLACE AGENT CONSENT AUTHORIZATION',
+    platform: 'Health Sherpa',
+  },
+  medicare: {
+    headerClass: 'medicare',
+    cardHeaderClass: 'medicare',
+    cardTitle: 'Medicare Agent Consent Authorization',
+    badge: 'Sunfire',
+    platformNotice: 'This consent authorizes Amanda to act as your agent for Medicare plan comparisons and enrollments and is required before she can access your Medicare information. Once submitted, your signed consent will also be uploaded to <strong>Sunfire</strong> for compliance.',
+    intro: 'Please read the following authorization carefully. By completing and signing this form, you are granting Amanda Montgomery permission to act as your licensed Medicare agent or broker.',
+    consentText: (name) => `
+      <p>I, <strong>${name||'[Your Name]'}</strong>, authorize <strong>Amanda Montgomery</strong> (Agent/Broker, NPN: 21391594) to act as my authorized representative in connection with my Medicare coverage.</p>
+      <p>By providing this consent, I authorize my Agent to:</p>
+      <ul>
+        <li>Access my Medicare information, including eligibility and enrollment status</li>
+        <li>Assist me in comparing and selecting Medicare Advantage, Medicare Supplement (Medigap), and/or Medicare Part D Prescription Drug Plans</li>
+        <li>Submit enrollment applications on my behalf</li>
+        <li>Communicate with Medicare and plan carriers regarding my coverage</li>
+        <li>Provide ongoing service, plan reviews, and enrollment assistance as needed</li>
+      </ul>
+      <p>I understand that my Agent is not affiliated with the federal Medicare program or the Centers for Medicare &amp; Medicaid Services (CMS). I understand that my Agent will not use or share my personal information for any purpose other than those listed above.</p>
+      <p>I understand that this consent remains in effect until I revoke it. I may revoke or modify this authorization at any time by contacting my Agent directly.</p>
+      <p><strong>Agent Name:</strong> Amanda Montgomery &nbsp;|&nbsp; <strong>NPN:</strong> 21391594 &nbsp;|&nbsp; <strong>Phone:</strong> (346) 577-4391</p>`,
+    legal: 'Amanda Montgomery is a licensed, independent insurance broker. She is not affiliated with Medicare, CMS, or any government agency. This consent is for agent of record designation only and does not constitute enrollment in any Medicare plan. Plan availability, premiums, and benefits vary by county and ZIP code. The client retains the right to revoke this authorization at any time by notifying Amanda Montgomery directly at (346) 577-4391.',
+    pdfTitle: 'MEDICARE AGENT CONSENT AUTHORIZATION',
+    platform: 'Sunfire',
+  }
+};
+
+function selectType(type) {
+  currentType = type;
+  const c = content[type];
+  document.getElementById('type-selector').style.display = 'none';
+  document.getElementById('form-container').style.display = 'block';
+
+  // Header
+  const header = document.getElementById('page-header');
+  header.className = 'header' + (type === 'medicare' ? ' medicare' : '');
+  document.getElementById('header-form-type').textContent = type === 'medicare' ? 'Medicare Agent Consent' : 'ACA / Marketplace Agent Consent';
+
+  // Platform notice
+  document.getElementById('platform-notice-text').innerHTML = c.platformNotice;
+
+  // Card
+  const cardHeader = document.getElementById('consent-card-header');
+  cardHeader.className = 'consent-card-header ' + c.cardHeaderClass;
+  document.getElementById('consent-card-title').textContent = c.cardTitle;
+  document.getElementById('consent-card-badge').textContent = c.badge;
+
+  // Content
+  document.getElementById('consent-intro').textContent = c.intro;
+  document.getElementById('consent-text').innerHTML = c.consentText('');
+  document.getElementById('legal-text').textContent = c.legal;
+
+  // Submit button color
+  const btn = document.getElementById('submit-btn');
+  btn.className = 'btn-primary' + (type === 'medicare' ? ' navy' : '');
+
+  // Thank you color
+  const ty = document.getElementById('thankyou');
+  ty.className = 'thankyou' + (type === 'medicare' ? ' medicare' : '');
+
+  // Set today's date
+  document.getElementById('c_date').value = new Date().toLocaleDateString('en-US', {month:'2-digit',day:'2-digit',year:'numeric'});
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function resetForm() {
+  currentType = null;
+  document.getElementById('type-selector').style.display = 'block';
+  document.getElementById('form-container').style.display = 'none';
+  document.getElementById('thankyou').style.display = 'none';
+  document.getElementById('action-row').style.display = 'flex';
+  ['c_name','c_dob','c_phone','c_email','c_zip','c_sig'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('c_agree').checked = false;
+  document.getElementById('sig-preview-text').textContent = '—';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function updateSigPreview() {
+  const sig = document.getElementById('c_sig').value.trim();
+  document.getElementById('sig-preview-text').textContent = sig || '—';
+  // Live update consent text with name
+  if (currentType) {
+    const name = document.getElementById('c_name').value.trim();
+    document.getElementById('consent-text').innerHTML = content[currentType].consentText(name);
+  }
+}
+
+function val(id) { const el = document.getElementById(id); return el ? (el.value.trim() || '—') : '—'; }
+
+async function submitConsent() {
+  const name = val('c_name'), sig = val('c_sig'), phone = val('c_phone');
+  const dob = val('c_dob'), date = val('c_date');
+  const agreed = document.getElementById('c_agree').checked;
+
+  if (name === '—') { alert('Please enter your full legal name.'); return; }
+  if (dob === '—') { alert('Please enter your date of birth.'); return; }
+  if (phone === '—') { alert('Please enter your phone number.'); return; }
+  if (sig === '—') { alert('Please type your full name as your electronic signature.'); return; }
+  if (!agreed) { alert('Please check the box to confirm you have read and agree to the consent terms.'); return; }
+
+  const c = content[currentType];
+  const data = {
+    'Consent Type': currentType === 'medicare' ? 'Medicare' : 'ACA / Marketplace',
+    'Platform': c.platform,
+    'Client Name': name,
+    'Date of Birth': dob,
+    'Phone': phone,
+    'Email': val('c_email'),
+    'ZIP Code': val('c_zip'),
+    'Electronic Signature': sig,
+    'Date Signed': date,
+    'Consent Agreed': 'Yes — client confirmed consent',
+    'Agent Name': 'Amanda Montgomery',
+    'Agent NPN': '21391594',
+  };
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true; btn.textContent = 'Sending…';
+
+  try {
+    const response = await fetch('https://formspree.io/f/mqerwrqz', {
+      method: 'POST',
+      headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+
+    if (response.ok) {
+      // Generate and download PDF
+      generatePDF(data, name, sig, date, dob);
+      // Show thank you
+      document.getElementById('action-row').style.display = 'none';
+      document.getElementById('thankyou').style.display = 'block';
+      document.getElementById('thankyou').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+      btn.disabled = false; btn.textContent = '✉ Sign & Submit Consent';
+      alert('Something went wrong. Please try again or call Amanda at (346) 577-4391.');
+    }
+  } catch (err) {
+    btn.disabled = false; btn.textContent = '✉ Sign & Submit Consent';
+    alert('Something went wrong. Please try again or call Amanda at (346) 577-4391.');
+  }
+}
+
+function generatePDF(data, name, sig, date, dob) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt', format: 'letter' });
+  const isMedicare = currentType === 'medicare';
+  const headerColor = isMedicare ? [26,58,92] : [44,74,71];
+  const gold = [184,131,42], muted = [107,126,124], black = [30,45,44];
+  const pageW = doc.internal.pageSize.getWidth(), margin = 55, colW = pageW - margin * 2;
+  let y = 0;
+
+  function checkPage(n) { if (y+n > doc.internal.pageSize.getHeight()-60) { doc.addPage(); y=60; } }
+  function divider() { checkPage(14); doc.setDrawColor(220,228,227); doc.setLineWidth(0.5); doc.line(margin,y,pageW-margin,y); y+=14; }
+  function fRow(label, value) {
+    if (!value || value === '—') return;
+    checkPage(20); doc.setFontSize(8.5); doc.setFont('helvetica','bold'); doc.setTextColor(...muted);
+    doc.text(label+':', margin, y); doc.setFont('helvetica','normal'); doc.setTextColor(...black);
+    const lines = doc.splitTextToSize(String(value), colW-140);
+    doc.text(lines, margin+140, y); y += Math.max(lines.length*13, 16);
+  }
+
+  // Header
+  doc.setFillColor(...headerColor); doc.rect(0,0,pageW,84,'F');
+  doc.setFillColor(...gold); doc.rect(0,70,pageW,3,'F');
+  doc.setTextColor(...gold); doc.setFontSize(7.5); doc.setFont('helvetica','normal');
+  doc.text(isMedicare ? 'MEDICARE AGENT CONSENT AUTHORIZATION' : 'ACA / MARKETPLACE AGENT CONSENT AUTHORIZATION', pageW/2, 16, {align:'center'});
+  doc.setTextColor(255,255,255); doc.setFontSize(22); doc.setFont('helvetica','italic');
+  doc.text('Amanda Montgomery', pageW/2, 40, {align:'center'});
+  doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(...gold);
+  doc.text('LICENSED HEALTH INSURANCE BROKER · TEXAS · NPN 21391594', pageW/2, 56, {align:'center'});
+  doc.setFontSize(8.5); doc.setTextColor(255,255,255);
+  doc.text(isMedicare ? 'For upload to: Sunfire' : 'For upload to: Health Sherpa', pageW/2, 68, {align:'center'});
+  y = 104;
+
+  // Client info box
+  doc.setFillColor(240,245,244); doc.rect(margin,y,colW,62,'F');
+  doc.setDrawColor(...headerColor); doc.setLineWidth(0.5); doc.rect(margin,y,colW,62,'S');
+  const half = colW/2;
+  doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.setTextColor(...muted);
+  doc.text('CLIENT NAME', margin+10, y+14);
+  doc.setFontSize(11); doc.setFont('helvetica','normal'); doc.setTextColor(...black);
+  doc.text(name, margin+10, y+28);
+  doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.setTextColor(...muted);
+  doc.text('DATE OF BIRTH', margin+10, y+46);
+  doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(...black);
+  const dobStr = dob !== '—' ? new Date(dob+'T12:00:00').toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'numeric'}) : '—';
+  doc.text(dobStr, margin+10, y+57);
+  doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.setTextColor(...muted);
+  doc.text('PHONE', margin+half, y+14);
+  doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(...black);
+  doc.text(data['Phone']||'—', margin+half, y+25);
+  doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.setTextColor(...muted);
+  doc.text('EMAIL', margin+half, y+38);
+  doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(...black);
+  doc.text(data['Email']||'—', margin+half, y+49);
+  doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.setTextColor(...muted);
+  doc.text('ZIP', margin+half+(half*0.6), y+38);
+  doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(...black);
+  doc.text(data['ZIP Code']||'—', margin+half+(half*0.6), y+49);
+  y += 76;
+
+  // Authorization header
+  doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.setTextColor(...headerColor);
+  doc.text('AUTHORIZATION', margin, y); y += 14; divider();
+
+  // Consent text
+  doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(...black);
+  const consentBody = isMedicare
+    ? `I, ${name}, authorize Amanda Montgomery (Agent/Broker, NPN: 21391594) to act as my authorized representative in connection with my Medicare coverage.\n\nBy providing this consent, I authorize my Agent to:\n  • Access my Medicare information, including eligibility and enrollment status\n  • Assist me in comparing and selecting Medicare Advantage, Medicare Supplement (Medigap), and/or Medicare Part D Prescription Drug Plans\n  • Submit enrollment applications on my behalf\n  • Communicate with Medicare and plan carriers regarding my coverage\n  • Provide ongoing service, plan reviews, and enrollment assistance as needed\n\nI understand that my Agent is not affiliated with the federal Medicare program or the Centers for Medicare & Medicaid Services (CMS). I understand that my Agent will not use or share my personal information for any purpose other than those listed above.\n\nI understand that this consent remains in effect until I revoke it. I may revoke or modify this authorization at any time by contacting my Agent directly.`
+    : `I, ${name}, give my permission to Amanda Montgomery ("Agent") to serve as the health insurance Agent or broker for myself and my entire household, if applicable, for purposes of enrollment in a Qualified Health Plan offered on the Federally Facilitated Marketplace or State Based Exchange (SBE).\n\nBy consenting to this agreement, I authorize the above-mentioned Agent to view and use the confidential information provided by me in writing, electronically, or by phone only for one or more of the following:\n  • Searching for an existing Marketplace or SBE application\n  • Completing an application for eligibility and enrollment in a Marketplace or SBE Qualified Health Plan or other government insurance affordability programs, such as Medicaid and CHIP or advance tax credits to help pay for Marketplace or SBE premiums\n  • Providing ongoing account maintenance and enrollment assistance, as necessary\n  • Responding to inquiries from the Marketplace or SBE regarding my application\n\nI understand that the Agent will not use or share my personally identifiable information (PII) for any purposes other than those listed above. The Agent will ensure that my PII is kept private and safe when collecting, storing, and using my PII for the stated purposes above.\n\nI understand that I do not have to share additional personal information about myself or my health with my Agent beyond what is required on the application for eligibility and enrollment purposes. I understand that my consent remains in effect until I revoke it, and I may revoke or modify my consent at any time by contacting my Agent.`;
+
+  const cLines = doc.splitTextToSize(consentBody, colW);
+  checkPage(cLines.length * 12 + 20);
+  doc.text(cLines, margin, y); y += cLines.length * 12 + 14;
+
+  // Agent info
+  checkPage(60);
+  doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.setTextColor(...headerColor);
+  doc.text('AGENT INFORMATION', margin, y); y += 14; divider();
+  fRow('Agent Name','Amanda Montgomery');
+  fRow('Agent NPN','21391594');
+  fRow('Agent Phone','(346) 577-4391');
+  fRow('Agent Email','amandamotgo@gmail.com');
+  y += 8;
+
+  // Signature block
+  checkPage(130);
+  doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.setTextColor(...headerColor);
+  doc.text('CLIENT SIGNATURE', margin, y); y += 14; divider();
+
+  // Sig box
+  doc.setFillColor(240,245,244); doc.rect(margin,y,colW*0.62,50,'F');
+  doc.setDrawColor(...headerColor); doc.setLineWidth(0.5); doc.rect(margin,y,colW*0.62,50,'S');
+  doc.setFontSize(17); doc.setFont('helvetica','italic'); doc.setTextColor(...headerColor);
+  doc.text(sig, margin+10, y+32);
+  doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(...muted);
+  doc.text('Electronic Signature — Legally Binding', margin+10, y+44);
+  doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(...black);
+  doc.text(`Date Signed: ${date}`, margin+colW*0.66, y+20);
+  doc.text(`Consent: Agreed`, margin+colW*0.66, y+36);
+  y += 64;
+
+  doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(...muted);
+  const agreeNote = 'By typing their name above, the client confirms they have read, understood, and agreed to the terms of this authorization. This electronic signature is legally binding.';
+  const aNotes = doc.splitTextToSize(agreeNote, colW);
+  doc.text(aNotes, margin, y); y += aNotes.length*11+14;
+
+  // Compliance block
+  checkPage(70);
+  doc.setFillColor(255,252,240); doc.rect(margin,y,colW,52,'F');
+  doc.setDrawColor(...gold); doc.setLineWidth(0.5); doc.rect(margin,y,colW,52,'S');
+  doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.setTextColor(...muted);
+  doc.text('COMPLIANCE NOTICE', margin+8, y+12);
+  doc.setFont('helvetica','normal');
+  const compText = isMedicare
+    ? 'Amanda Montgomery is a licensed, independent insurance broker. She is not affiliated with Medicare, CMS, or any government agency and does not represent all Medicare plans. This consent is for agent of record designation only. For upload to Sunfire.'
+    : 'Amanda Montgomery is a licensed, independent insurance broker. This consent is for agent of record designation on the Federally Facilitated Marketplace or State Based Exchange only. It does not constitute enrollment in any health plan. For upload to Health Sherpa.';
+  const compLines = doc.splitTextToSize(compText, colW-16);
+  doc.text(compLines, margin+8, y+22);
+
+  // Page footer
+  const fY = doc.internal.pageSize.getHeight()-22;
+  doc.setDrawColor(...headerColor); doc.setLineWidth(0.5); doc.line(margin,fY-8,pageW-margin,fY-8);
+  doc.setFontSize(7); doc.setTextColor(...muted);
+  doc.text(`A. Montgomery Insurance · amandamotgo@gmail.com · (346) 577-4391 · Generated: ${date}`, pageW/2, fY, {align:'center'});
+
+  const fname = name.replace(/\s+/g,'_');
+  const type = isMedicare ? 'Medicare' : 'ACA';
+  doc.save(`${fname}_${type}_Consent.pdf`);
+}
+</script>
+</body>
+</html>
